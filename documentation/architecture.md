@@ -5,14 +5,15 @@ Antinna_OS is designed to be an "AI-Native" operating system. Unlike traditional
 
 ## Core Principles
 1. **Native over Wrappers**: No Google-based frameworks or languages. Focus on direct hardware interaction and native performance.
-2. **AI-Driven Scheduling**: Future versions will use reinforcement learning to optimize process scheduling.
-3. **Intelligent Memory Management**: Predictive paging based on user behavior patterns.
-4. **Natural Interaction**: Built-in NLP and voice recognition as primary interface methods.
+2. **Rust-Based**: Leveraging Rust's memory safety and performance for kernel and user-space development.
+3. **AI-Driven Scheduling**: Future versions will use reinforcement learning to optimize process scheduling.
+4. **Intelligent Memory Management**: Predictive paging based on user behavior patterns.
+5. **Natural Interaction**: Built-in NLP and voice recognition as primary interface methods.
 
 ## Current Scaffolding
 - **Bootloader**: Simple Multiboot-compliant entry point.
-- **Kernel**: Basic C++ kernel with VGA text output.
-- **User Space**: Scaffolding for AI-driven applications (e.g., `chatbot`).
+- **Kernel**: Basic Rust kernel with VGA text output.
+- **User Space**: Rust scaffolding for AI-driven applications (e.g., `chatbot`).
 
 ## Roadmap
 - Implement memory management (Paging/Segmentation).

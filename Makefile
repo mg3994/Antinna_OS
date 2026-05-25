@@ -1,31 +1,30 @@
 # Compilation settings
 AS = as
-CXX = g++
 LD = ld
+CARGO = cargo
 
 ASFLAGS = --32
-CXXFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti
 LDFLAGS = -m elf_i386 -T kernel/linker.ld
 
 # Files
 BOOT_SRC = bootloader/source/boot.S
-KERNEL_SRC = kernel/source/kernel.cpp
 BOOT_OBJ = boot.o
-KERNEL_OBJ = kernel.o
+KERNEL_LIB = kernel/target/i686-unknown-linux-gnu/release/libkernel.a
 KERNEL_BIN = kernel.bin
 
-.PHONY: all clean
+.PHONY: all clean kernel_rust
 
 all: $(KERNEL_BIN)
 
 $(BOOT_OBJ): $(BOOT_SRC)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(KERNEL_OBJ): $(KERNEL_SRC)
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+kernel_rust:
+	cd kernel && $(CARGO) build --release --target i686-unknown-linux-gnu
 
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@
+$(KERNEL_BIN): $(BOOT_OBJ) kernel_rust
+	$(LD) $(LDFLAGS) $(BOOT_OBJ) $(KERNEL_LIB) -o $@
 
 clean:
-	rm -f $(BOOT_OBJ) $(KERNEL_OBJ) $(KERNEL_BIN)
+	rm -f $(BOOT_OBJ) $(KERNEL_BIN)
+	cd kernel && $(CARGO) clean
