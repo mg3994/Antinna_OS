@@ -1,114 +1,20 @@
 #![no_std]
 #![no_main]
+#![feature(abi_x86_interrupt)]
+
+pub mod vga;
+pub mod gdt;
+pub mod interrupts;
+pub mod keyboard;
 
 use core::panic::PanicInfo;
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Color {
-    Black = 0,
-    Blue = 1,
-    Green = 2,
-    Cyan = 3,
-    Red = 4,
-    Magenta = 5,
-    Brown = 6,
-    LightGray = 7,
-    DarkGray = 8,
-    LightBlue = 9,
-    LightGreen = 10,
-    LightCyan = 11,
-    LightRed = 12,
-    Pink = 13,
-    Yellow = 14,
-    White = 15,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-struct ColorCode(u8);
-
-impl ColorCode {
-    fn new(foreground: Color, background: Color) -> ColorCode {
-        ColorCode((background as u8) << 4 | (foreground as u8))
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-struct ScreenChar {
-    ascii_character: u8,
-    color_code: ColorCode,
-}
-
-const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize = 80;
-
-struct Writer {
-    column_position: usize,
-    row_position: usize,
-    color_code: ColorCode,
-    buffer: &'static mut [ScreenChar; BUFFER_HEIGHT * BUFFER_WIDTH],
-}
-
-impl Writer {
-    pub fn write_byte(&mut self, byte: u8) {
-        match byte {
-            b'\n' => self.new_line(),
-            byte => {
-                if self.column_position >= BUFFER_WIDTH {
-                    self.new_line();
-                }
-
-                let row = self.row_position;
-                let col = self.column_position;
-
-                let color_code = self.color_code;
-                self.buffer[row * BUFFER_WIDTH + col] = ScreenChar {
-                    ascii_character: byte,
-                    color_code,
-                };
-                self.column_position += 1;
-            }
-        }
-    }
-
-    fn new_line(&mut self) {
-        self.column_position = 0;
-        if self.row_position < BUFFER_HEIGHT - 1 {
-            self.row_position += 1;
-        } else {
-            // Simple scroll (clear and reset to top for now, or just wrap)
-            self.row_position = 0;
-            self.clear_screen();
-        }
-    }
-
-    pub fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
-                // not part of printable ASCII range
-                _ => self.write_byte(0xfe),
-            }
-        }
-    }
-
-    pub fn clear_screen(&mut self) {
-        let blank = ScreenChar {
-            ascii_character: b' ',
-            color_code: self.color_code,
-        };
-        for i in 0..(BUFFER_HEIGHT * BUFFER_WIDTH) {
-            self.buffer[i] = blank;
-        }
-    }
-}
+use vga::{Writer, ColorCode, Color, BUFFER_HEIGHT, BUFFER_WIDTH, ScreenChar};
 
 #[no_mangle]
 pub extern "C" fn kernel_main() -> ! {
+    gdt::init();
+    interrupts::init();
+
     let mut writer = Writer {
         column_position: 0,
         row_position: 0,
@@ -118,7 +24,7 @@ pub extern "C" fn kernel_main() -> ! {
 
     writer.clear_screen();
     writer.write_string("Welcome to Antinna_OS (Rust Edition)!\n");
-    writer.write_string("Native AI-Native Scaffolding Loaded Successfully.");
+    writer.write_string("Modular Kernel Scaffolding Loaded Successfully.\n");
 
     loop {}
 }
@@ -128,6 +34,7 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+// Memory intrinsics
 #[no_mangle]
 pub extern "C" fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 {
     unsafe {
